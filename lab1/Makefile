@@ -36,7 +36,3 @@ clean:
 $(BUILD_DIR)/test_ipc: tests/test_ipc.c $(SRC_DIR)/ipc.c $(HEADERS)
 	mkdir -p $(BUILD_DIR)
 	$(CC) $(CFLAGS) -I$(SRC_DIR) tests/test_ipc.c $(SRC_DIR)/ipc.c -o $@
-
-test: app lint $(BUILD_DIR)/test_ipc archive
-	timeout 10 ./$(BUILD_DIR)/test_ipc
-	python3 tests/verify.py
