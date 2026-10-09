@@ -1,32 +1,42 @@
-CC      	= gcc
-CFLAGS  	= -g
-RM      	= rm -f
+CC = clang
+CFLAGS = -std=c99 -Wall -pedantic -g
+SRC_DIR := pa1
+BUILD_DIR := build
+SOURCES := $(wildcard $(SRC_DIR)/*.c)
+HEADERS := $(wildcard $(SRC_DIR)/*.h)
+OBJECTS := $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SOURCES))
+APP := $(BUILD_DIR)/bin/app
 
-SRC_DIR 	:= pa1
-BUILD_DIR 	:= build
-SOURCES 	:= $(shell find $(SRC_DIR)/ -type f -name '*.c')
-OBJECTS 	:= $(SOURCES:%.c=$(BUILD_DIR)/%.o)
-OBJ_DIRS	:= $(dir $(OBJECTS))
-
-SRC = $(BUILD_DIR)/app
+.PHONY: all app lint clean run archive test
 
 all: app
 
-app: create_dirs $(OBJECTS)
-	$(CC) $(CFLAGS) -o $(SRC) $(OBJECTS)
+app: $(APP)
 
-$(BUILD_DIR)/%.o: %.c
-	echo $@
+$(APP): $(OBJECTS)
+	mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -o $@ $^
+
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c $(HEADERS)
+	mkdir -p $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-create_dirs:
-	mkdir -p $(OBJ_DIRS)
-
 lint:
-	clang -std=c99 -Wall -pedantic $(SOURCES)
-
-clean:
-	$(RM) -rf $(OBJECTS) $(BUILD_DIR) $(SRC)
+	$(CC) -std=c99 -Wall -pedantic -fsyntax-only $(SOURCES)
 
 run: app
-	./$(SRC) $(ARGS)
+	./$(APP) $(ARGS)
+
+archive:
+	tar -czf pa1.tar.gz $(SOURCES) $(HEADERS)
+
+clean:
+	$(RM) $(OBJECTS) $(APP) $(BUILD_DIR)/test_ipc
+
+$(BUILD_DIR)/test_ipc: tests/test_ipc.c $(SRC_DIR)/ipc.c $(HEADERS)
+	mkdir -p $(BUILD_DIR)
+	$(CC) $(CFLAGS) -I$(SRC_DIR) tests/test_ipc.c $(SRC_DIR)/ipc.c -o $@
+
+test: app lint $(BUILD_DIR)/test_ipc archive
+	timeout 10 ./$(BUILD_DIR)/test_ipc
+	python3 tests/verify.py

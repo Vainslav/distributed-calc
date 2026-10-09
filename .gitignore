@@ -1,0 +1,7 @@
+/tmp/
+/lab1/build/
+/lab1/pa1.tar.gz
+events.log
+pipes.log
+
+*.pdf
